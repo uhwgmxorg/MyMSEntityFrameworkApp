@@ -17,7 +17,7 @@ namespace MyMSEntityFrameWorkApp
         public long Id { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
-        public int Age { get; set; }
+        public Nullable<int> Age { get; set; }
         public System.DateTime InsertDate { get; set; }
     }
 }

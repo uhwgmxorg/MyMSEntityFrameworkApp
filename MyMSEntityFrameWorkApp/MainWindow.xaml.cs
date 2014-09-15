@@ -4,6 +4,9 @@
 /*   A simple Entity Framework application.                                   */
 /*                                                                            */
 /*   18.08.2014 0.0.0.0 uhwgmxorg Start                                       */
+/*   04.09.2014         uhwgmxorg Changed comments                            */
+/*   15.09.2014 1.1.0.0 uhwgmxorg Introduce the using command for DbContex,   */
+/*                                changing database restrictions (NOT NULL).  */
 /*                                                                            */
 /******************************************************************************/
 using System;
@@ -39,7 +42,6 @@ namespace MyMSEntityFrameWorkApp
         private string message;
         public string Message { get { return message; } set { message = value; OnPropertyChanged("Message"); } }
 
-        TestDBEntities TestDBEntitiesContext;  
         public ObservableCollection<Name> NameList { get; set; }
         MyMSEntityFrameWorkApp.Name SelectedItem { get; set; }
 
@@ -118,7 +120,7 @@ namespace MyMSEntityFrameWorkApp
             {
                 var Grid = (DataGrid)sender;
                 SelectedItem = Grid.SelectedItem as MyMSEntityFrameWorkApp.Name;
-                if (SelectedItem.Id > 0)
+                if (SelectedItem != null && SelectedItem.Id > 0)
                     Message = String.Format("SelectedItem is {0} {1} {2} {3}", SelectedItem.Id, SelectedItem.FirstName, SelectedItem.LastName, SelectedItem.Age);
             }
             catch (Exception)
@@ -130,7 +132,7 @@ namespace MyMSEntityFrameWorkApp
         /// <summary>
         /// DataGrid_TableNames_PreviewKeyDown
         /// Here we perform the Delete
-        /// Delete on Del-KeyDown
+        /// DELETE on Del-KeyDown
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -139,55 +141,93 @@ namespace MyMSEntityFrameWorkApp
             var Grid = (DataGrid)sender;
             if (Key.Delete == e.Key)
             {
-                try
+                using (var EntitiesContext = new TestDBEntities())
                 {
-                    long Id = ((MyMSEntityFrameWorkApp.Name)Grid.SelectedItem).Id;
-                    var Record = TestDBEntitiesContext.Names.First(n => n.Id == Id);
-                    TestDBEntitiesContext.Names.Remove(Record);
-                    TestDBEntitiesContext.SaveChanges();
-                    Message = "Save Data to SQL";
-                }
-                catch(Exception)
-                {
-                    Message = "ERROR by Delete";
+                    try
+                    {
+                        long Id = ((MyMSEntityFrameWorkApp.Name)Grid.SelectedItem).Id;
+                        Name EntityItem = EntitiesContext.Names.First(n => n.Id == Id);
+                        EntitiesContext.Names.Remove(EntityItem);
+                        EntitiesContext.SaveChanges();
+                        Message = "Save Data to SQL";
+                    }
+                    catch (Exception)
+                    {
+                        Message = "ERROR on Delete";
+                    }
                 }
             }
         }
 
         /// <summary>
         /// DataGrid_TableNames_RowEditEnding
+        /// INSERT or UPDATE depents on IsAddingANewItem
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void DataGrid_TableNames_RowEditEnding(object sender, DataGridRowEditEndingEventArgs e)
         {
             var Grid = (DataGrid)sender;
-            Grid.RowEditEnding -= DataGrid_TableNames_RowEditEnding;
+            Grid.RowEditEnding -= DataGrid_TableNames_RowEditEnding; // CommitEdit and Items.Refresh is not possible when event is subscribed
             Grid.CommitEdit();
             Grid.Items.Refresh();
             Grid.RowEditEnding += DataGrid_TableNames_RowEditEnding;
-            if (IsAddingANewItem)
+            using (var EntitiesContext = new TestDBEntities())
             {
-                Name EFRecord = new Name();
-                EFRecord.FirstName = SelectedItem.FirstName;
-                EFRecord.LastName = SelectedItem.LastName;
-                EFRecord.Age = SelectedItem.Age;
-                EFRecord.InsertDate = DateTime.Now;
-                TestDBEntitiesContext.Names.Add(EFRecord);
-                IsAddingANewItem = false;
-            }
-            try
-            {
-                TestDBEntitiesContext.SaveChanges();
-                Message = "Save Data to SQL";
-            }
-            catch (Exception)
-            {
-                Message = "ERROR by Insert";
+                // INSERT
+                if (IsAddingANewItem)
+                {
+                    if (SelectedItem != null)
+                    {
+                        Name EntityItem = new Name();
+                        EntityItem.FirstName = SelectedItem.FirstName;
+                        EntityItem.LastName = SelectedItem.LastName;
+                        EntityItem.Age = SelectedItem.Age;
+                        EntityItem.InsertDate = DateTime.Now;
+                        EntitiesContext.Names.Add(EntityItem);
+                        IsAddingANewItem = false;
+                    }
+                    else
+                        Message = String.Format("ERROR on Insert");
+                }
+                else // UPDATE
+                {
+                    Name UpdateItem = Grid.SelectedItem as MyMSEntityFrameWorkApp.Name;
+                    if(UpdateItem != null)
+                    {
+                        Name EntityItem = EntitiesContext.Names.Where(o => o.Id == UpdateItem.Id).FirstOrDefault();
+                        if (EntityItem != null)
+                        {
+                            EntityItem.FirstName = UpdateItem.FirstName;
+                            EntityItem.LastName = UpdateItem.LastName;
+                            EntityItem.Age = UpdateItem.Age;
+                            EntityItem.InsertDate = UpdateItem.InsertDate;
+                        }
+                        else
+                            Message = String.Format("ERROR on Update");
+                    }
+                    else
+                        Message = String.Format("ERROR on Update");
+                }
+
+                // Save the changes to SQL DB either a row is added or just updated
+                try
+                {
+                    EntitiesContext.SaveChanges();
+                    Message = "Save Data to SQL";
+                }
+                catch (Exception)
+                {
+                    Message = "ERROR on Save Data to SQL";
+                }
             }
         }
 
-
+        /// <summary>
+        /// DataGrid_TableNames_AddingNewItem
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void DataGrid_TableNames_AddingNewItem(object sender, AddingNewItemEventArgs e)
         {
             IsAddingANewItem = true;
@@ -202,26 +242,26 @@ namespace MyMSEntityFrameWorkApp
 
         /// <summary>
         /// LoadTable
+        /// SELECT
         /// </summary>
         private void LoadTable()
         {
-            try
+            using (var EntitiesContext = new TestDBEntities())
             {
-                TestDBEntitiesContext = new TestDBEntities();
+                try
+                {
+                    NameList = new ObservableCollection<Name>();
+                    var Names = EntitiesContext.Names;
+                    foreach (var name in Names)
+                        NameList.Add(name);
+                    DataGrid_TableNames.ItemsSource = NameList;
 
-                NameList = new ObservableCollection<Name>();
-
-                var Names = TestDBEntitiesContext.Names;
-                foreach (var name in Names)
-                    NameList.Add(name);
-
-                DataGrid_TableNames.ItemsSource = NameList;
-
-                Message = "Load Data from SQL";
-            }
-            catch (Exception)
-            {
-                Message = "ERROR can not load data from SQL-Server!";
+                    Message = "Load Data from SQL";
+                }
+                catch (Exception)
+                {
+                    Message = "ERROR can not load data from SQL-Server!";
+                }
             }
         }
 

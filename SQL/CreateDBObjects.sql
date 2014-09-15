@@ -9,9 +9,9 @@ END
 GO
 CREATE TABLE myschema.Name(
 	Id			bigint IDENTITY(1,1) NOT NULL PRIMARY KEY,
-	FirstName	nvarchar(100) NOT NULL,
-	LastName	nvarchar(100) NOT NULL,
-	Age         int NOT NULL,
+	FirstName	nvarchar(100),
+	LastName	nvarchar(100),
+	Age         int,
 	InsertDate	datetime2 NOT NULL DEFAULT getdate()
 )
 GO

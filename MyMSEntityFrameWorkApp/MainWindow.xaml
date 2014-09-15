@@ -15,10 +15,10 @@
         <DataGrid x:Name="DataGrid_TableNames" ItemsSource="{Binding NameList}" AutoGenerateColumns="False" SelectionMode="Single" Margin="23,57,35,55" SelectionChanged="DataGrid_TableNames_SelectionChanged" PreviewKeyDown="DataGrid_TableNames_PreviewKeyDown" RowEditEnding="DataGrid_TableNames_RowEditEnding" AddingNewItem="DataGrid_TableNames_AddingNewItem">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Id" Binding="{Binding Path=Id}" IsReadOnly="True"/>
-                <DataGridTextColumn Header="FirstName" Binding="{Binding Path=FirstName}"/>
-                <DataGridTextColumn Header="LastName" Binding="{Binding Path=LastName}"/>
-                <DataGridTextColumn Header="Age" Binding="{Binding Path=Age}"/>
-                <DataGridTextColumn Header="InsertDate"  Binding="{Binding InsertDate, StringFormat=\{0:dd.MM.yyyy HH:mm:ss\}}" />
+                <DataGridTextColumn Header="FirstName" Binding="{Binding Path=FirstName,NotifyOnTargetUpdated=True,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <DataGridTextColumn Header="LastName" Binding="{Binding Path=LastName,NotifyOnTargetUpdated=True,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <DataGridTextColumn Header="Age" Binding="{Binding Path=Age,NotifyOnTargetUpdated=True,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <DataGridTextColumn Header="InsertDate"  Binding="{Binding InsertDate, StringFormat=\{0:dd.MM.yyyy HH:mm:ss\},NotifyOnTargetUpdated=True,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             </DataGrid.Columns>
         </DataGrid>
         <Button x:Name="Reload"  Content="Reload" HorizontalAlignment="Left" Margin="23,0,0,20" VerticalAlignment="Bottom" Width="75" Click="Reload_Click" />
